@@ -1,6 +1,6 @@
 "use strict";
 import {GLIB_2D_Init, TPoint, TSprite} from "./GLIB_2D.js";
-export const EButtonState = {t Normal: 0, Hover: 1, Active: 2 };
+export const EButtonState = {Normal: 0, Hover: 1, Active: 2 };
 export const EContainerType = { Action: 1, Toggle: 2, Check: 3 };
 let cvs = null;
 let ctx = null;

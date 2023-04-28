@@ -2,10 +2,6 @@
 import {TPoint, } from "./GLIB_2D.js";
 import { initMenu, createMenu, EColorType, EStrokeSizeType} from "./menu.js";
 
-
-
-//original
-
 let cvs = null;
 let ctx = null;
 let divPaintObject = null;
@@ -15,10 +11,13 @@ const NewLine = "<br />";
 const txtLog = document.getElementById("txtLog");
 const mousePos = new TPoint(0, 0);
 
+const strokeColors = EColorType;
+const strokeSize = EStrokeSizeType;
 //------------------------------------------------------------------------------------------------------------------
 //------ Classes
 //------------------------------------------------------------------------------------------------------------------
 
+;
 
 //------------------------------------------------------------------------------------------------------------------
 //------ Function and Events

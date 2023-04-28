@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="no" style="display: table; margin: auto;">
+<head>
+    <meta charset="UTF-8" content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Paint</title>
+    <link rel="stylesheet" href="paint.css">
+</head>
+<body>
+<h2><label for="cvsMenu">Paint</label></h2>
+<table>
+    <tr>
+        <td>
+            <canvas id="cvsMenu" width="775" height="115"
+                    style="background-color: floralwhite; border: thin  gray solid"></canvas>
+        </td>
+        <td>
+            <div id="paintObjectList">
+                <div id="divPaintObject" class="paintObject">Shape-1</div>
+            </div>
+        </td>
+    </tr>
+</table>
+<br/>
+<canvas id="cvsPaint" width="1000" height="500" style="background-color: ghostwhite; border: thin  gray solid"></canvas>
+<h4>Press F12 to debug (Chrome and Firefox)</h4>
+<fieldset>
+    <legend>Paint Log</legend>
+    <span id="txtLog"></span>
+</fieldset>
+<script type="module">
+    "use strict";
+    import { initPaint, drawing } from "./script/paint.js";
+    const cvsPaint = document.getElementById("cvsPaint");
+    const cvsMenu = document.getElementById("cvsMenu");
+    const divPaintObject = document.getElementById("divPaintObject");
+
+    initPaint(cvsPaint, cvsMenu);
+
+    drawing(cvsPaint);
+
+    document.addEventListener('contextmenu', aEvent => aEvent.preventDefault());
+</script>
+
+</body>
+</html>

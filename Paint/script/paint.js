@@ -19,8 +19,6 @@ const mousePos = new TPoint(0, 0);
 //------ Classes
 //------------------------------------------------------------------------------------------------------------------
 
-const strokeColors = EColorType; //importerer fargeverdiene fra menu.js
-const strokeSize = EStrokeSizeType;
 
 //------------------------------------------------------------------------------------------------------------------
 //------ Function and Events

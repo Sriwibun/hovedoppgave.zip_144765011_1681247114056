@@ -145,10 +145,6 @@ export function TSprite(aSpriteInfo, aPos) {
 
 export function GLIB_2D_Init(aCTX, aImageName, aGameReady) {
     ctx = aCTX;
-    ctx.eColorType = "black";
-    ctx.StrokeSize = 5;
-    ctx.fillColor = "Black";
-    
     imgSheet = new Image();
     imgSheet.addEventListener("load", aGameReady, false);
     imgSheet.src = aImageName;

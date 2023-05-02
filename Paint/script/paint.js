@@ -117,7 +117,9 @@ function loadPaintApp() {
     txtLog += "Button " + aButtonKey + ", value = " + aButtonValue.toLocaleString();
     addLogText(txtLog);
 
-    if (aContainerKey === "StrokeColor" && strokeColors[aButtonKey]) {
+
+
+function chooseStroke (aContainerKey, aButtonKey, aButtonValue);    if (aContainerKey === "StrokeColor" && strokeColors[aButtonKey]) {
         ctx.strokeStyle = strokeColors[aButtonKey];
       }
     if (aContainerKey === "StrokeSize" && strokeSize[aButtonKey]) {
@@ -125,9 +127,7 @@ function loadPaintApp() {
       }
       if((aContainerKey === "ShapeType") && (aButtonKey === "Line")){
         drawStraightLine();
-     }
-     
-function chooseStroke (aContainerKey, aButtonKey, aButtonValue);     
+     }     
 }
 
 

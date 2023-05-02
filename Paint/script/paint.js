@@ -126,6 +126,8 @@ function loadPaintApp() {
       if((aContainerKey === "ShapeType") && (aButtonKey === "Line")){
         drawStraightLine();
      }
+     
+function chooseStroke (aContainerKey, aButtonKey, aButtonValue);     
 }
 
 

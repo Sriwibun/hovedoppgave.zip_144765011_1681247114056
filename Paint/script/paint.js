@@ -116,10 +116,13 @@ function loadPaintApp() {
     let txtLog = "Container " + aContainerKey + " => ";
     txtLog += "Button " + aButtonKey + ", value = " + aButtonValue.toLocaleString();
     addLogText(txtLog);
+    chooseStroke(aContainerKey, aButtonKey, aButtonValue)
+  }
 
 
-
-function chooseStroke (aContainerKey, aButtonKey, aButtonValue);    if (aContainerKey === "StrokeColor" && strokeColors[aButtonKey]) {
+function chooseStroke (aContainerKey, aButtonKey, aButtonValue)
+{
+if (aContainerKey === "StrokeColor" && strokeColors[aButtonKey]) {
         ctx.strokeStyle = strokeColors[aButtonKey];
       }
     if (aContainerKey === "StrokeSize" && strokeSize[aButtonKey]) {
@@ -128,7 +131,7 @@ function chooseStroke (aContainerKey, aButtonKey, aButtonValue);    if (aContain
       if((aContainerKey === "ShapeType") && (aButtonKey === "Line")){
         drawStraightLine();
      }     
-}
+    }
 
 
 function setMousePos(aEvent) {

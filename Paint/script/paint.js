@@ -121,7 +121,6 @@ function loadPaintApp() {
     chooseStroke(aContainerKey, aButtonKey, aButtonValue)
   }
 
-
 function chooseStroke (aContainerKey, aButtonKey, aButtonValue)
 {
 if (aContainerKey === "StrokeColor" && strokeColors[aButtonKey]) {

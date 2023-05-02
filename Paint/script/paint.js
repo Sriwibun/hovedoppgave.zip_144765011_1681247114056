@@ -14,6 +14,8 @@ const mousePos = new TPoint(0, 0);
 const strokeColors = EColorType;
 const strokeSize = EStrokeSizeType;
 const FillColors = EColorType;
+
+const drawingList = [];
 //------------------------------------------------------------------------------------------------------------------
 //------ Classes
 //------------------------------------------------------------------------------------------------------------------

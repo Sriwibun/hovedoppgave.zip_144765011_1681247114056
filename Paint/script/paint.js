@@ -23,6 +23,39 @@ const strokeSize = EStrokeSizeType;
 //------ Function and Events
 //------------------------------------------------------------------------------------------------------------------
 
+function drawStraightLine(){
+
+    // Set the starting point of the line
+    let startX = 0;
+    let startY = 0;
+
+
+    cvs.addEventListener("mousedown", function(event) {
+
+    // Set the end point of the line
+    startX = mousePos.x;
+    startY = mousePos.y;
+
+    // Listen for the mouse move event
+    cvs.addEventListener("mousemove", drawLine);
+    });
+
+    // Listen for the mouse up event
+    cvs.addEventListener("mouseup", function() {
+    // Remove the mouse move event listener
+    cvs.removeEventListener("mousemove", drawLine);
+    });
+
+    // Function to draw the line
+    function drawLine(event) {
+
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(mousePos.x, mousePos.y);
+    ctx.stroke();
+}
+}
 
    // Variables to keep track of mouse status
    let isDrawing = false;
@@ -89,6 +122,9 @@ function loadPaintApp() {
     if (aContainerKey === "StrokeSize" && strokeSize[aButtonKey]) {
         ctx.lineWidth = strokeSize[aButtonKey];
       }
+      if((aContainerKey === "ShapeType") && (aButtonKey === "Line")){
+        drawStraightLine();
+     }
 }
 
 

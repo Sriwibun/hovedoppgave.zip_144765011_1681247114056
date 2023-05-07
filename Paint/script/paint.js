@@ -1,11 +1,19 @@
 "use strict"
 import {TPoint, } from "./GLIB_2D.js";
-import { initMenu, createMenu, EColorType, EStrokeSizeType} from "./menu.js";
+import {initMenu, createMenu, EColorType, EStrokeSizeType} from "./menu.js";
+import { TdrawingObject } from "./drawingoObjects.js";
 
 let cvs = null;
 let ctx = null;
 let divPaintObject = null;
 
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+
+let drawingOcject = new TdrawingObject();
+let currentDrawing = null;
+const drawingList = [];
 
 const NewLine = "<br />";
 const txtLog = document.getElementById("txtLog");
@@ -15,12 +23,12 @@ const strokeColors = EColorType;
 const strokeSize = EStrokeSizeType;
 const FillColors = EColorType;
 
-const drawingList = [];
+
 //------------------------------------------------------------------------------------------------------------------
 //------ Classes
 //------------------------------------------------------------------------------------------------------------------
 
-;
+
 
 //------------------------------------------------------------------------------------------------------------------
 //------ Function and Events
@@ -32,24 +40,16 @@ function drawStraightLine(){
     let startX = 0;
     let startY = 0;
 
-
     cvs.addEventListener("mousedown", function(event) {
-
-    // Set the end point of the line
     startX = mousePos.x;
     startY = mousePos.y;
 
-    // Listen for the mouse move event
     cvs.addEventListener("mousemove", drawLine);
     });
-
-    // Listen for the mouse up event
     cvs.addEventListener("mouseup", function() {
-    // Remove the mouse move event listener
-    cvs.removeEventListener("mousemove", drawLine);
+      cvs.removeEventListener("mousemove", drawLine);
     });
 
-    // Function to draw the line
     function drawLine(event) {
 
     ctx.clearRect(0, 0, cvs.width, cvs.height);
@@ -57,19 +57,156 @@ function drawStraightLine(){
     ctx.moveTo(startX, startY);
     ctx.lineTo(mousePos.x, mousePos.y);
     ctx.stroke();
-}
+  }
 }
 
-   // Variables to keep track of mouse status
-   let isDrawing = false;
-   let lastX = 0;
-   let lastY = 0;
+function drawFreehand() {
+
+  let startX = 0;
+  let startY = 0;
+
+  cvs.addEventListener("mousedown", function (event) {
+      startX = mousePos.x;
+      startY = mousePos.y;
+
+      cvs.addEventListener("mousemove", drawLine);
+  });
+
+  cvs.addEventListener("mouseup", function () {
+      cvs.removeEventListener("mousemove", drawLine);
+  });
+
+  function drawLine(event) {
+
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      setMousePos();
+      cvsPaintMouseMove();
+      cvsPaintMouseDown();
+      cvsPaintMouseUp();
+
+      ctx = cvs.getContext("2d");
+      cvs.addEventListener("mousemove", cvsPaintMouseMove);
+      cvs.addEventListener("mousedown", cvsPaintMouseDown);
+      cvs.addEventListener("mouseup", cvsPaintMouseUp);
+  }
+}
+
+function drawCircle() {
+
+  let centerX = 0;
+  let centerY = 0;
+
+  cvs.addEventListener("mousedown", function (event) {
+      centerX = mousePos.x;
+      centerY = mousePos.y;
+
+      cvs.addEventListener("mousemove", drawCircle);
+  });
+
+  cvs.addEventListener("mouseup", function () {
+      cvs.removeEventListener("mousemove", drawCircle);
+  });
+
+  function drawCircle(event) {
+      const radius = Math.sqrt(
+          Math.pow(centerX - mousePos.x, 2) + Math.pow(centerY - mousePos.y, 2)
+      );
+
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.stroke();
+  }
+}
+
+
+function drawOval() {
+
+  let centerX = 0;
+  let centerY = 0;
+  cvs.addEventListener("mousedown", function (event) {
+      centerX = mousePos.x;
+      centerY = mousePos.y;
+
+      cvs.addEventListener("mousemove", drawOval);
+  });
+
+  cvs.addEventListener("mouseup", function () {
+      cvs.removeEventListener("mousemove", drawOval);
+  });
+
+  function drawOval(event) {
+      let radiusX = Math.sqrt(Math.pow(centerX - mousePos.x, 2) + Math.pow(centerY - mousePos.y, 2)) / 2;
+      let radiusY = Math.sqrt(Math.pow(centerX - mousePos.x, 2) + Math.pow(centerY - mousePos.y, 2));
+
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, radiusX, radiusY, Math.PI / 2, 0, 2 * Math.PI);
+      ctx.stroke();
+  }
+}
+
+function drawRectangle() {
+
+  let lastX = 0;
+  let lastY = 0;
+
+  cvs.addEventListener("mousedown", function (event) {
+      lastX = mousePos.x;
+      lastY = mousePos.y;
+
+      cvs.addEventListener("mousemove", drawRect);
+  });
+
+  cvs.addEventListener("mouseup", function () {
+      cvs.removeEventListener("mousemove", drawRect);
+  });
+
+  function drawRect(event) {
+
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      ctx.beginPath();
+      ctx.rect(mousePos.x, mousePos.y, lastX - mousePos.x, lastY - mousePos.y);
+      ctx.stroke();
+  }
+}
+
+function drawPolygon() {
+
+  let centerX = 0;
+  let centerY = 0;
+
+  cvs.addEventListener("mousedown", function (event) {
+      centerX = mousePos.x;
+      centerY = mousePos.y;
+
+      cvs.addEventListener("mousemove", drawPoly);
+  });
+
+  cvs.addEventListener("mouseup", function () {
+      cvs.removeEventListener("mousemove", drawPoly);
+  });
+
+
+  function drawPoly(event) {
+
+      let numberOfSides = 6;
+      ctx.beginPath();
+      ctx.moveTo(centerX + mousePos.x * Math.cos(0), centerY + mousePos.y * Math.sin(0));
+
+      for (var i = 1; i <= numberOfSides; i += 1) {
+          ctx.lineTo(centerX + mousePos.x * Math.cos(i * 2 * Math.PI / numberOfSides), centerY + mousePos.y * Math.sin(i * 2 * Math.PI / numberOfSides));
+      }
+      ctx.stroke();
+  }
+}
 
     // Function to start drawing
     function startDrawing(event) {
       isDrawing = true;
       lastX = mousePos.x;
       lastY = mousePos.y;
+      
     }
     
     // Function to stop drawing
@@ -82,14 +219,12 @@ function drawStraightLine(){
       if (!isDrawing) return;
       ctx.beginPath();
       ctx.moveTo(lastX, lastY);
-      ctx.lineTo(mouseos.x, mousePos.y);
+      ctx.lineTo(mousePos.x, mousePos.y);
       ctx.stroke();
       lastX = mousePos.x;
       lastY = mousePos.y;
     }
     
-    // Add event listeners to canvas
-
 function addLogText(aText) {
     if (txtLog.innerHTML.length > 0) {
         txtLog.innerHTML += NewLine;
@@ -119,7 +254,10 @@ function loadPaintApp() {
     txtLog += "Button " + aButtonKey + ", value = " + aButtonValue.toLocaleString();
     addLogText(txtLog);
     chooseStroke(aContainerKey, aButtonKey, aButtonValue)
-  }
+
+  setMenuChoices(aContainerKey, aButtonKey, aButtonValue);
+  chooseShape(aButtonKey);
+}
 
 function chooseStroke (aContainerKey, aButtonKey, aButtonValue)
 {
@@ -133,6 +271,45 @@ if (aContainerKey === "StrokeColor" && strokeColors[aButtonKey]) {
         drawStraightLine();
      }     
     }
+
+function setMenuChoices(aContainerKey, aButtonKey, aButtonValue) {
+  if (aContainerKey === "StrokeColor" && EColorType[aButtonKey]) {
+      ctx.strokeStyle = EColorType[aButtonKey];
+  }
+
+  if (aContainerKey === "FillColor" && EColorType[aButtonKey]) {
+      ctx.fillStyle = EColorType[aButtonKey];
+  }
+
+  if (aContainerKey === "StrokeSize" && EStrokeSizeType[aButtonKey]) {
+      ctx.lineWidth = EStrokeSizeType[aButtonKey];
+  }
+
+  if ((aContainerKey === "Action") && (aButtonKey === "New")) {
+      newDrawing();
+  }
+
+  if ((aContainerKey === "Action") && (aButtonKey === "Eraser")) {
+      drawingList.pop();
+  }
+}
+
+function chooseShape(aButtonKey) {
+  //currentDrawingObject = new TDrawingObject(aButtonKey);
+  if (aButtonKey === "Line") {
+      drawStraightLine();
+  } else if (aButtonKey === "Pen") {
+      drawFreehand();
+  } else if (aButtonKey === "Circle") {
+      drawCircle();
+  } else if (aButtonKey === "Oval") {
+      drawOval();
+  } else if (aButtonKey === "Rectangle") {
+      drawRectangle();
+  } else if (aButtonKey === "Polygon") {
+      drawPolygon();
+  }
+}
 
 
 function setMousePos(aEvent) {
@@ -167,6 +344,8 @@ function cvsPaintMouseUp(aEvent) {  // denne stopper tegningen
     // Mouse button up in canvas
     isDrawing = false;
     console.log("ferdig klikk")
+      //her legger du til tegnede objekter
+    //drawingList.push(new TDrawingObject(ctx, ));
 }
 
 
@@ -182,7 +361,7 @@ export function initPaint(aPaintCanvas, aMenuCanvas) {
     cvs = aPaintCanvas;
     ctx = cvs.getContext("2d");
     cvs.addEventListener("mousemove", cvsPaintMouseMove);
-    cvs.addEventListener("mousedown", cvsPaintMouseDown);
+    cvs.addEventListener("mousedown", startDrawing);
     cvs.addEventListener("mouseup", cvsPaintMouseUp);
     
     /* 

@@ -349,6 +349,13 @@ export function createMenu(aClickFunction) {
     for (let i = 0; i < keys.length; i++) {
         containers.push(new TContainerButton(ContainerButtons[keys[i]], aClickFunction));
     }
+
+    // Set default menu selection
+    containers[1].setActive(0);  // Stroke color
+    containers[2].setActive(3);  // Stroke size
+    containers[3].setActive(1);  // Shape type
+    containers[4].setActive(0);  // Fill color
+
     drawMenu();
 }
 

@@ -5,7 +5,7 @@ export const EContainerType = { Action: 1, Toggle: 2, Check: 3 };
 let cvs = null;
 let ctx = null;
 
-const paintObjectList = document.getElementById("paintObjectList");
+export const paintObjectList = document.getElementById("paintObjectList");
 
 const menuMousePos = new TPoint(0, 0);
 
@@ -71,7 +71,7 @@ export const EStrokeSizeType = {
     Thick: 5
 };
 
-const EShapeType = {
+export const EShapeType = {
     Line: 1,
     Pen: 2,
     Circle: 3,
@@ -80,7 +80,7 @@ const EShapeType = {
     Polygon: 6
 };
 
-const EActionType = {
+export const EActionType = {
     New: 1,
     Eraser: 2,
     MoveUp: 3,
@@ -126,7 +126,6 @@ const ContainerButtons = {
     }
 
 };
-
 
 const containers = [];
 
@@ -285,7 +284,7 @@ function cvsMenuClick() {
     }
 }
 
-function paintObjectClick(aObject) {
+export function paintObjectClick(aObject) {
     const children = paintObjectList.children;
     for (let i = 0; i < children.length; i++) {
         const child = children[i];
@@ -301,7 +300,7 @@ function paintObjectClick(aObject) {
     }
 }
 
-function menuGetCurrentPaintShape() {
+export function menuGetCurrentPaintShape() {
     const children = paintObjectList.children;
     for (let i = 0; i < children.length; i++) {
         const child = children[i];
@@ -313,7 +312,11 @@ function menuGetCurrentPaintShape() {
 }
 
 export function menuAddPaintShape(aText) {
-    paintObjectList.innerHTML = "<div class=\"paintObject\" onclick=\"return paintObjectClick(this)\">" + aText + "</div>\n" + paintObjectList.innerHTML;
+    const div = document.createElement("div");
+    div.classList.add("paintObject");
+    div.addEventListener("click", paintObjectClick, false);
+    div.innerText = aText;
+    paintObjectList.appendChild(div);
 }
 
 export function menuMovePaintShapeDown() {
@@ -350,13 +353,14 @@ export function createMenu(aClickFunction) {
         containers.push(new TContainerButton(ContainerButtons[keys[i]], aClickFunction));
     }
 
+    drawMenu();
+
     // Set default menu selection
     containers[1].setActive(0);  // Stroke color
     containers[2].setActive(3);  // Stroke size
     containers[3].setActive(1);  // Shape type
     containers[4].setActive(0);  // Fill color
 
-    drawMenu();
 }
 
 

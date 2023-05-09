@@ -2,7 +2,7 @@
 import { TPoint, } from "./GLIB_2D.js";
 import {
     initMenu, createMenu, EButtonState, EColorType, EStrokeSizeType, EShapeType, EActionType,
-    paintObjectList, paintObjectClick, menuAddPaintShape, menuMovePaintShapeDown, menuMovePaintShapeUp
+    paintObjectList, paintObjectClick, menuAddPaintShape, menuMovePaintShapeDown, menuMovePaintShapeUp, menuGetCurrentPaintShape, menuRemovePaintShape
 } from "./menu.js";
 
 
@@ -16,19 +16,20 @@ let drawingProperties = new TDrawingProperties();
 let currentDrawingObject = null;
 
 const mousePos = new TPoint(0, 0);
-export const drawings = [];
+const drawings = [];
 
 
 const NewLine = "<br />";
 const txtLog = document.getElementById("txtLog");
 
+
 //------------------------------------------------------------------------------------------------------------------
 //------ Classes
 //------------------------------------------------------------------------------------------------------------------
 
-const drawing = {
-TDrawingProperties: function (aShapeType, aFillStyle, aStrokeStyle, aLineWidth) {
+//Start Class TDrawingProperties
 
+export function TDrawingProperties(aShapeType, aFillStyle, aStrokeStyle, aLineWidth) { //This class Gathers the information from the active buttons
     this.shapeType = aShapeType;
     this.fillStyle = aFillStyle;
     this.strokeStyle = aStrokeStyle;
@@ -36,19 +37,20 @@ TDrawingProperties: function (aShapeType, aFillStyle, aStrokeStyle, aLineWidth) 
 
     this.goodToGo = function () {
         return (this.shapeType && this.fillStyle && this.strokeStyle && this.lineWidth);
-    };
-},
+    }
+} //End Class TDrawingProperties
 
 
-TDrawingObject: function (aStartPos, aDrawingProp) {
+//Start Class TDRawingObject
+export function TDrawingObject(aStartPos, aDrawingProp) {//this class is used to draw the different shapes based on the info sent from TDrawingProperties
     const points = [new TPoint(aStartPos.x, aStartPos.y)];
     const prop = new TDrawingProperties(aDrawingProp.shapeType, aDrawingProp.fillStyle, aDrawingProp.strokeStyle, aDrawingProp.lineWidth);
     let rubberBandPos = aStartPos;
 
 
-    this.name = Object.keys(EShapeType)[prop.shapeType - 1] + "-" + (drawings.length + 1).toString();
+    this.name = Object.keys(EShapeType)[prop.shapeType - 1] + "-" + (drawings.length + 1).toString(); // Sets name for the drawing object 
 
-    this.addPos = function (aPoint) {
+    this.addPos = function (aPoint) { //Need this to add extra points to Pen and polygon
         points.push(aPoint);
     };
 
@@ -64,31 +66,37 @@ TDrawingObject: function (aStartPos, aDrawingProp) {
 
         switch (prop.shapeType) {
             case EShapeType.Line: // Line
-            case EShapeType.Pen: // Pen, hvis 
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            for (let i = 1; i < points.length; i++) {
-                ctx.lineTo(points[i].x, points[i].y);
-            }
-            if (rubberBandPos) {
-                ctx.lineTo(rubberBandPos.x, rubberBandPos.y);
-            }
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-            break;
+            case EShapeType.Pen: // Pen
+            case EShapeType.Polygon: //Polygon
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                if (rubberBandPos) {
+                    ctx.lineTo(rubberBandPos.x, rubberBandPos.y);
+                }
+
+                if (prop.shapeType === EShapeType.Polygon) { // Need closePath() and fill() only for the polygon (to complete shape and add fill) 
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.stroke();
+                break;
 
             case EShapeType.Circle: // Circle
             case EShapeType.Oval: // Oval
-                let radius = [Math.abs(endPos.x - points[0].x), 0];
-                if (prop.shapeType === EShapeType.Circle) {
-                    radius[1] = radius[0];
-                } else {
-                    radius[1] = Math.abs(endPos.y - points[0].y);
-                }
 
                 ctx.beginPath();
-                ctx.ellipse(points[0].x, points[0].y, radius[0], radius[1], 0, 0, Math.PI * 2);
+
+                if (prop.shapeType === EShapeType.Circle) {
+                    let radius = Math.sqrt(Math.pow(points[0].x - endPos.x, 2) + Math.pow(points[0].y - endPos.y, 2));
+                    ctx.arc(points[0].x, points[0].y, radius, 0, 2 * Math.PI);
+                } else {
+                    let radius = [Math.abs(endPos.x - points[0].x), Math.abs(endPos.y - points[0].y)];
+                    ctx.ellipse(points[0].x, points[0].y, radius[0], radius[1], 0, 0, Math.PI * 2);
+                }
+
                 ctx.fill();
                 ctx.stroke();
                 break;
@@ -98,26 +106,13 @@ TDrawingObject: function (aStartPos, aDrawingProp) {
                 ctx.fillRect(points[0].x, points[0].y, size.width, size.height);
                 ctx.strokeRect(points[0].x, points[0].y, size.width, size.height);
                 break;
-
-            case EShapeType.Polygon: //Polygon
-
-                let numberOfSides = 6;
-                ctx.beginPath();
-                ctx.moveTo(centerX + mousePos.x * Math.cos(0), centerY + mousePos.y * Math.sin(0));
-
-                for (var i = 1; i <= numberOfSides; i += 1) {
-                    ctx.lineTo(centerX + mousePos.x * Math.cos(i * 2 * Math.PI / numberOfSides), centerY + mousePos.y * Math.sin(i * 2 * Math.PI / numberOfSides));
-                }
-                ctx.stroke();
         }
-        }
-    },
-    this:setEnd = function (aPos) {
+    };
+    this.setEnd = function (aPos) {//Used to set final endposition of drawing object
         points.push(new TPoint(aPos.x, aPos.y));
         rubberBandPos = null;
     }
-};
-
+} // End Class TDrawingObject
 
 
 //------------------------------------------------------------------------------------------------------------------
@@ -131,71 +126,44 @@ function addLogText(aText) {
     txtLog.innerHTML += aText;
 }
 
-function newDrawing() {
+function newDrawing() { //Clearing canvas to start over
 
     addLogText("New Drawing!");
 
     currentDrawingObject = null;
     drawings.length = 0;
     ctx.clearRect(0, 0, cvs.width, cvs.height);
+
 }
 
-function removeObject() {
-    const index = menuGetCurrentPaintShape();
-    if (index >= 0) {
-        paintObjectList.removeChild(paintObjectList.children[index]);
-
+function removeObject() { //Used to remove only "selected" object
     addLogText("Deleted shape!");
 
-
-
-    updateDrawing();
-}}
-export function menuGetCurrentPaintShape() {
-    const children = paintObjectList.children;
-    for (let i = 0; i < children.length; i++) {
-        const child = children[i];
-        if (child.classList.contains("selected")) {
-            return i;
+    const paintObjects = paintObjectList.children;
+    let selectedName = "";
+    let divDelete = null;
+    for (let i = 0; i < paintObjects.length; i++) {
+        if (paintObjects[i].classList.contains("selected") === true) {  // Checkes if layer has value "selected"
+            selectedName = paintObjects[i].innerText;
         }
     }
-    return -1;
+        selectedName.remove();
+
+
+    let deleteIndex;
+    for (let i = 0; i < drawings.length; i++) {
+        if (drawings[i].name === selectedName) {
+            deleteIndex = i;
+        }
+    }
+    if (deleteIndex >= 0) {
+        drawings.splice(deleteIndex, 1);
+
+        updateDrawing();
+    }
 }
 
-paintObjectList.addEventListener("click", (event) => {
-    const target = event.target;
-    const children = paintObjectList.children;
-
-    if (target.tagName === "LI") {
-      const currentIndex = Array.from(children).indexOf(target);
-
-      if (currentIndex > 0) {
-        // Move the clicked item up in the list
-        paintObjectList.insertBefore(target, children[currentIndex - 1]);
-        // Move the corresponding layer up in the layer style
-        moveLayerUp(currentIndex);
-      } else if (currentIndex < children.length - 1) {
-        // Move the clicked item down in the list
-        paintObjectList.insertBefore(target, children[currentIndex + 2]);
-        // Move the corresponding layer down in the layer style
-        moveLayerDown(currentIndex);
-      }
-    }
-  });
-
-  function moveLayerUp(currentIndex) {
-    // Move the corresponding layer up in the layer style
-    const layer = paintObjectList.children[currentIndex].layer;
-    layer.parentNode.insertBefore(layer, layer.previousSibling);
-  }
-
-  function moveLayerDown(currentIndex) {
-    // Move the corresponding layer down in the layer style
-    const layer = paintObjectList.children[currentIndex].layer;
-    layer.parentNode.insertBefore(layer.nextSibling, layer);
-  }
-
-function updateDrawing() {
+function updateDrawing() {//Need this to make canvas ready for next drawing cycle
     ctx.clearRect(0, 0, cvs.width, cvs.height);
 
     for (let i = 0; i < drawings.length; i++) {
@@ -207,9 +175,11 @@ function updateDrawing() {
     }
 }
 
+
 /*
-    This function is call from the menu when all menuitems is loaded
+    This function is called from the menu when all menuitems is loaded
 */
+
 function loadPaintApp() {
     createMenu(cmbClick);
     newDrawing();
@@ -220,11 +190,11 @@ function cmbClick(aContainerKey, aButtonKey, aButtonValue) {
     txtLog += "Button " + aButtonKey + ", value = " + aButtonValue.toLocaleString();
     addLogText(txtLog);
 
-    if (!drawingProperties) {
+    if (!drawingProperties) { //Making an occurence of TDrawingProperties, but without setting parameters needed
         drawingProperties = new TDrawingProperties();
     }
 
-    if (aContainerKey === "Action") {
+    if (aContainerKey === "Action") { //Calls the functions that should run when each action-button is clicked
         switch (aButtonValue) {
             case EActionType.New:
                 newDrawing();
@@ -239,7 +209,7 @@ function cmbClick(aContainerKey, aButtonKey, aButtonValue) {
                 menuMovePaintShapeDown();
                 break;
         }
-    } else if
+    } else if //Set the parameters needed for TDrawingProperties (the color/fill/size/shape chosen by active buttons)
         (aContainerKey === "StrokeColor") {
         drawingProperties.strokeStyle = aButtonValue;
     } else if (aContainerKey === "FillColor") {
@@ -254,14 +224,14 @@ function cmbClick(aContainerKey, aButtonKey, aButtonValue) {
 
 }
 
-function setMousePos(aEvent) {
+
+function setMousePos(aEvent) {  //Sets the mouseposition when aEvent happens
     const bounds = cvs.getBoundingClientRect();
-    mousePos.x = aEvent.clientX - bounds.left;
-    mousePos.y = aEvent.clientY - bounds.top;
+    mousePos.x = aEvent.x - bounds.left;
+    mousePos.y = aEvent.y - bounds.top;
 }
 
-export function cvsPaintMouseMove(aEvent) {      // denne kjører setMousePos når cvsPaintMouseMove blir ropt på
-    // Mouse move over canvas
+export function cvsPaintMouseMove(aEvent) { //Runs when mouse is moved while mousebutton down on canvas
     setMousePos(aEvent);
 
     if (currentDrawingObject) {
@@ -273,8 +243,7 @@ export function cvsPaintMouseMove(aEvent) {      // denne kjører setMousePos n�
     }
 }
 
-export function cvsPaintMouseDown(aEvent) { // denne må kjøre igang hele tegnefunksjonen
-    // Mouse button down in canvas
+export function cvsPaintMouseDown(aEvent) { //Runs when mousebutton is pressed down in canvas
 
     if (drawingProperties.goodToGo()) {
         if (!currentDrawingObject) {
@@ -291,8 +260,7 @@ export function cvsPaintMouseDown(aEvent) { // denne må kjøre igang hele tegne
 }
 
 
-export function cvsPaintMouseUp(aEvent) {  // denne stopper tegningen
-    // Mouse button up in canvas
+export function cvsPaintMouseUp(aEvent) {  //Runs when mousebutton is released
     if (currentDrawingObject) {
         if (drawingProperties.shapeType === EShapeType.Polygon) {
             currentDrawingObject.addPos(new TPoint(mousePos.x, mousePos.y));
@@ -303,32 +271,23 @@ export function cvsPaintMouseUp(aEvent) {  // denne stopper tegningen
             currentDrawingObject = null;
         }
     }
-
-    // Adds the new object/shape made to the list
-
+    // Adds the new drawing object/shape to the list
     updateDrawing();
 }
 
 console.log("Tegneliste: " + drawings.length.toString());
 
-/*export function drawing(aPaintCanvas){
-    cvs = aPaintCanvas;
-    ctx = cvs.getContext("2d");
-    cvsPaintMouseMove;
-    cvsPaintMouseDown;
-    cvsPaintMouseUp;
-}
-*/
 export function initPaint(aPaintCanvas, aMenuCanvas) {
+    //Need this to  provide canvas, and to listen for events to start running functions connected to the mousebutton
     cvs = aPaintCanvas;
     ctx = cvs.getContext("2d");
     cvs.addEventListener("mousemove", cvsPaintMouseMove);
-    cvs.addEventListener("mousedown", startDrawing);
+    cvs.addEventListener("mousedown", cvsPaintMouseDown);
     cvs.addEventListener("mouseup", cvsPaintMouseUp);
-    
+
     /* 
         Initialize the menu with canvas for drawing menu items.
         loadPaintApp is the call back when all menuitems has been created
-    */ 
+    */
     initMenu(aMenuCanvas, loadPaintApp);
 }

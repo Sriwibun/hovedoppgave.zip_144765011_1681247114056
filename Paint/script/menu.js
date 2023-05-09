@@ -1,6 +1,6 @@
 "use strict";
-import {GLIB_2D_Init, TPoint, TSprite} from "./GLIB_2D.js";
-export const EButtonState = {Normal: 0, Hover: 1, Active: 2 };
+import { GLIB_2D_Init, TPoint, TRectangle, TSprite } from "./GLIB_2D.js";
+export const EButtonState = { Normal: 0, Hover: 1, Active: 2 };
 export const EContainerType = { Action: 1, Toggle: 2, Check: 3 };
 let cvs = null;
 let ctx = null;
@@ -199,9 +199,10 @@ function TContainerButton(aContainerInfo, aClickFunction) {
             }
         }
         return false;
-    };
+    }
 
     function doClick(aButtonIndex) {
+
         if (onClick) {
             const containerIndex = containers.indexOf(clickObject);
             const containerKey = Object.keys(ContainerButtons)[containerIndex];
@@ -249,8 +250,8 @@ function TButton(aPos, aSpriteInfo, aClickFunction) {
             onClick(clickObject);
         }
     };
-} // end of TButton
 
+} // end of TButton
 
 //------------------------------------------------------------------------------------------------------------------
 //------ Function and Events
@@ -285,10 +286,11 @@ function cvsMenuClick() {
 }
 
 export function paintObjectClick(aObject) {
+    const shape = aObject.target;
     const children = paintObjectList.children;
     for (let i = 0; i < children.length; i++) {
         const child = children[i];
-        if (child === aObject) {
+        if (child === shape) {
             if (child.classList.contains("selected")) {
                 child.className = "paintObject";
             } else {
@@ -309,6 +311,17 @@ export function menuGetCurrentPaintShape() {
         }
     }
     return "";
+}
+
+export function menuRemovePaintShape() {
+    const children = paintObjectList.children;
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (child.classList.contains("selected")) {
+            return child.innerText;
+        }
+    }
+    return -1;
 }
 
 export function menuAddPaintShape(aText) {
@@ -348,6 +361,7 @@ export function menuMovePaintShapeUp() {
 }
 
 export function createMenu(aClickFunction) {
+
     const keys = Object.keys(ContainerButtons);
     for (let i = 0; i < keys.length; i++) {
         containers.push(new TContainerButton(ContainerButtons[keys[i]], aClickFunction));
@@ -355,12 +369,10 @@ export function createMenu(aClickFunction) {
 
     drawMenu();
 
-    // Set default menu selection
-    containers[1].setActive(0);  // Stroke color
-    containers[2].setActive(3);  // Stroke size
-    containers[3].setActive(1);  // Shape type
-    containers[4].setActive(0);  // Fill color
-
+    containers[1].setActive(0);
+    containers[2].setActive(0);
+    containers[3].setActive(1);
+    containers[4].setActive(0);
 }
 
 

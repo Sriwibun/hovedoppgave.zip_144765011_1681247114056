@@ -1,22 +1,20 @@
 "use strict"
 import { TPoint, } from "./GLIB_2D.js";
 import {
-    initMenu, createMenu, EButtonState, EColorType, EStrokeSizeType, EShapeType, EActionType,
-    paintObjectList, paintObjectClick, menuAddPaintShape, menuMovePaintShapeDown, menuMovePaintShapeUp, menuGetCurrentPaintShape, menuRemovePaintShape
+    initMenu, createMenu, EShapeType, EActionType,
+    paintObjectList, menuAddPaintShape, menuMovePaintShapeDown, menuMovePaintShapeUp,
 } from "./menu.js";
 
 
 let cvs = null;
 let ctx = null;
-let posX = 0;
-let posY = 0;
 
 
 let drawingProperties = new TDrawingProperties();
 let currentDrawingObject = null;
 
 const mousePos = new TPoint(0, 0);
-const drawings = [];
+const drawings = []; //Er et tomt array hvor vi pusher opp hver tegnet tegning.
 
 
 const NewLine = "<br />";
@@ -28,14 +26,14 @@ const txtLog = document.getElementById("txtLog");
 //------------------------------------------------------------------------------------------------------------------
 
 //Start Class TDrawingProperties
-
-export function TDrawingProperties(aShapeType, aFillStyle, aStrokeStyle, aLineWidth) { //This class Gathers the information from the active buttons
+//This class Gathers the information from the active buttons
+export function TDrawingProperties(aShapeType, aFillStyle, aStrokeStyle, aLineWidth) { 
     this.shapeType = aShapeType;
     this.fillStyle = aFillStyle;
     this.strokeStyle = aStrokeStyle;
     this.lineWidth = aLineWidth;
 
-    this.goodToGo = function () {
+    this.goodToGo = function () { // Sjekker om vi har den informasjonen vi trenger
         return (this.shapeType && this.fillStyle && this.strokeStyle && this.lineWidth);
     }
 } //End Class TDrawingProperties
@@ -136,30 +134,16 @@ function newDrawing() { //Clearing canvas to start over
 
 }
 
-function removeObject() { //Used to remove only "selected" object
+function removeObject() {
+
+    const index = menuRemoveCurrentPaintShape();
+    if (index >= 0) {
+        paintObjectList.removeChild(paintObjectList.children[index]);
+        drawings.splice(index, 1); 
+
     addLogText("Deleted shape!");
 
-    const paintObjects = paintObjectList.children;
-    let selectedName = "";
-    let divDelete = null;
-    for (let i = 0; i < paintObjects.length; i++) {
-        if (paintObjects[i].classList.contains("selected") === true) {  // Checkes if layer has value "selected"
-            selectedName = paintObjects[i].innerText;
-        }
-    }
-        selectedName.remove();
-
-
-    let deleteIndex;
-    for (let i = 0; i < drawings.length; i++) {
-        if (drawings[i].name === selectedName) {
-            deleteIndex = i;
-        }
-    }
-    if (deleteIndex >= 0) {
-        drawings.splice(deleteIndex, 1);
-
-        updateDrawing();
+    updateDrawing();
     }
 }
 

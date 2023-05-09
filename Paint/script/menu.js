@@ -313,15 +313,15 @@ export function menuGetCurrentPaintShape() {
     return "";
 }
 
-export function menuRemovePaintShape() {
+export function menuRemoveCurrentPaintShape() {
     const children = paintObjectList.children;
     for (let i = 0; i < children.length; i++) {
         const child = children[i];
         if (child.classList.contains("selected")) {
-            return child.innerText;
+            return i;
         }
     }
-    return -1;
+    return -1 ;
 }
 
 export function menuAddPaintShape(aText) {

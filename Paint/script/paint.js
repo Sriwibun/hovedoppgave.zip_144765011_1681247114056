@@ -1,204 +1,121 @@
 "use strict"
 import { TPoint, } from "./GLIB_2D.js";
-import { initMenu, createMenu, EButtonState, EColorType, EStrokeSizeType, EShapeType, EActionType } from "./menu.js";
-import { TDrawingObject } from "./drawingObject.js";
-
+import {
+    initMenu, createMenu, EShapeType, EActionType,
+    paintObjectList, menuAddPaintShape, menuMovePaintShapeDown, menuMovePaintShapeUp, menuRemoveCurrentPaintShape
+} from "./menu.js";
 
 
 let cvs = null;
 let ctx = null;
-let divPaintObject = null;
 
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
 
-let drawingObject = new TDrawingObject();
+let drawingProperties = new TDrawingProperties();
 let currentDrawingObject = null;
-const drawingObjectList = [];
 
+const mousePos = new TPoint(0, 0);
+const drawings = []; //Er et tomt array hvor vi pusher opp hver tegnet tegning.
 
 
 const NewLine = "<br />";
 const txtLog = document.getElementById("txtLog");
-const mousePos = new TPoint(0, 0);
-const drawingList = [];
+
 
 //------------------------------------------------------------------------------------------------------------------
 //------ Classes
 //------------------------------------------------------------------------------------------------------------------
 
+//Start Class TDrawingProperties
+//This class Gathers the information from the active buttons
+export function TDrawingProperties(aShapeType, aFillStyle, aStrokeStyle, aLineWidth) { 
+    this.shapeType = aShapeType;
+    this.fillStyle = aFillStyle;
+    this.strokeStyle = aStrokeStyle;
+    this.lineWidth = aLineWidth;
+
+    this.goodToGo = function () { // Sjekker om vi har den informasjonen vi trenger
+        return (this.shapeType && this.fillStyle && this.strokeStyle && this.lineWidth);
+    }
+} //End Class TDrawingProperties
+
+
+//Start Class TDRawingObject
+export function TDrawingObject(aStartPos, aDrawingProp) {//this class is used to draw the different shapes based on the info sent from TDrawingProperties
+    const points = [new TPoint(aStartPos.x, aStartPos.y)];
+    const prop = new TDrawingProperties(aDrawingProp.shapeType, aDrawingProp.fillStyle, aDrawingProp.strokeStyle, aDrawingProp.lineWidth);
+    let rubberBandPos = aStartPos;
+
+
+    this.name = Object.keys(EShapeType)[prop.shapeType - 1] + "-" + (drawings.length + 1).toString(); // Sets name for the drawing object 
+
+    this.addPos = function (aPoint) { //Need this to add extra points to Pen and polygon
+        points.push(aPoint);
+    };
+
+    this.draw = function () {
+        ctx.fillStyle = prop.fillStyle;
+        ctx.strokeStyle = prop.strokeStyle;
+        ctx.lineWidth = prop.lineWidth;
+
+        let endPos = rubberBandPos;
+        if (endPos === null) {
+            endPos = points[1];
+        }
+
+        switch (prop.shapeType) {
+            case EShapeType.Line: // Line
+            case EShapeType.Pen: // Pen
+            case EShapeType.Polygon: //Polygon
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                if (rubberBandPos) {
+                    ctx.lineTo(rubberBandPos.x, rubberBandPos.y);
+                }
+
+                if (prop.shapeType === EShapeType.Polygon) { // Need closePath() and fill() only for the polygon (to complete shape and add fill) 
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.stroke();
+                break;
+
+            case EShapeType.Circle: // Circle
+            case EShapeType.Oval: // Oval
+
+                ctx.beginPath();
+
+                if (prop.shapeType === EShapeType.Circle) {
+                    let radius = Math.sqrt(Math.pow(points[0].x - endPos.x, 2) + Math.pow(points[0].y - endPos.y, 2));
+                    ctx.arc(points[0].x, points[0].y, radius, 0, 2 * Math.PI);
+                } else {
+                    let radius = [Math.abs(endPos.x - points[0].x), Math.abs(endPos.y - points[0].y)];
+                    ctx.ellipse(points[0].x, points[0].y, radius[0], radius[1], 0, 0, Math.PI * 2);
+                }
+
+                ctx.fill();
+                ctx.stroke();
+                break;
+
+            case EShapeType.Rectangle: // Rectangle  
+                let size = { width: endPos.x - points[0].x, height: endPos.y - points[0].y };
+                ctx.fillRect(points[0].x, points[0].y, size.width, size.height);
+                ctx.strokeRect(points[0].x, points[0].y, size.width, size.height);
+                break;
+        }
+    };
+    this.setEnd = function (aPos) {//Used to set final endposition of drawing object
+        points.push(new TPoint(aPos.x, aPos.y));
+        rubberBandPos = null;
+    }
+} // End Class TDrawingObject
+
 
 //------------------------------------------------------------------------------------------------------------------
 //------ Function and Events
 //------------------------------------------------------------------------------------------------------------------
-
-function drawStraightLine() {
-
-    let startX = 0;
-    let startY = 0;
-
-    cvs.addEventListener("mousedown", function (event) {
-        startX = mousePos.x;
-        startY = mousePos.y;
-
-        cvs.addEventListener("mousemove", drawLine);
-    });
-
-    cvs.addEventListener("mouseup", function () {
-        cvs.removeEventListener("mousemove", drawLine);
-    });
-
-    function drawLine(event) {
-
-        ctx.clearRect(0, 0, cvs.width, cvs.height);
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(mousePos.x, mousePos.y);
-        ctx.stroke();
-    }
-
-}
-function drawFreehand() {
-
-    let startX = 0;
-    let startY = 0;
-
-    cvs.addEventListener("mousedown", function (event) {
-        startX = mousePos.x;
-        startY = mousePos.y;
-
-        cvs.addEventListener("mousemove", drawLine);
-    });
-
-    cvs.addEventListener("mouseup", function () {
-        cvs.removeEventListener("mousemove", drawLine);
-    });
-
-    function drawLine(event) {
-
-        ctx.clearRect(0, 0, cvs.width, cvs.height);
-        setMousePos();
-        cvsPaintMouseMove();
-        cvsPaintMouseDown();
-        cvsPaintMouseUp();
-
-        ctx = cvs.getContext("2d");
-        cvs.addEventListener("mousemove", cvsPaintMouseMove);
-        cvs.addEventListener("mousedown", cvsPaintMouseDown);
-        cvs.addEventListener("mouseup", cvsPaintMouseUp);
-    }
-}
-
-function drawCircle() {
-
-    let centerX = 0;
-    let centerY = 0;
-
-    cvs.addEventListener("mousedown", function (event) {
-        centerX = mousePos.x;
-        centerY = mousePos.y;
-
-        cvs.addEventListener("mousemove", drawCircle);
-    });
-
-    cvs.addEventListener("mouseup", function () {
-        cvs.removeEventListener("mousemove", drawCircle);
-    });
-
-    function drawCircle(event) {
-        const radius = Math.sqrt(
-            Math.pow(centerX - mousePos.x, 2) + Math.pow(centerY - mousePos.y, 2)
-        );
-
-        ctx.clearRect(0, 0, cvs.width, cvs.height);
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        ctx.stroke();
-    }
-}
-
-
-function drawOval() {
-
-    let centerX = 0;
-    let centerY = 0;
-    cvs.addEventListener("mousedown", function (event) {
-        centerX = mousePos.x;
-        centerY = mousePos.y;
-
-        cvs.addEventListener("mousemove", drawOval);
-    });
-
-    cvs.addEventListener("mouseup", function () {
-        cvs.removeEventListener("mousemove", drawOval);
-    });
-
-    function drawOval(event) {
-        let radiusX = Math.sqrt(Math.pow(centerX - mousePos.x, 2) + Math.pow(centerY - mousePos.y, 2)) / 2;
-        let radiusY = Math.sqrt(Math.pow(centerX - mousePos.x, 2) + Math.pow(centerY - mousePos.y, 2));
-
-        ctx.clearRect(0, 0, cvs.width, cvs.height);
-        ctx.beginPath();
-        ctx.ellipse(centerX, centerY, radiusX, radiusY, Math.PI / 2, 0, 2 * Math.PI);
-        ctx.stroke();
-    }
-}
-
-function drawRectangle() {
-
-    let lastX = 0;
-    let lastY = 0;
-
-    cvs.addEventListener("mousedown", function (event) {
-        lastX = mousePos.x;
-        lastY = mousePos.y;
-
-        cvs.addEventListener("mousemove", drawRect);
-    });
-
-    cvs.addEventListener("mouseup", function () {
-        cvs.removeEventListener("mousemove", drawRect);
-    });
-
-    function drawRect(event) {
-
-        ctx.clearRect(0, 0, cvs.width, cvs.height);
-        ctx.beginPath();
-        ctx.rect(mousePos.x, mousePos.y, lastX - mousePos.x, lastY - mousePos.y);
-        ctx.stroke();
-    }
-}
-
-function drawPolygon() {
-
-    let centerX = 0;
-    let centerY = 0;
-
-    cvs.addEventListener("mousedown", function (event) {
-        centerX = mousePos.x;
-        centerY = mousePos.y;
-
-        cvs.addEventListener("mousemove", drawPoly);
-    });
-
-    cvs.addEventListener("mouseup", function () {
-        cvs.removeEventListener("mousemove", drawPoly);
-    });
-
-
-    function drawPoly(event) {
-
-        let numberOfSides = 6;
-        ctx.beginPath();
-        ctx.moveTo(centerX + mousePos.x * Math.cos(0), centerY + mousePos.y * Math.sin(0));
-
-        for (var i = 1; i <= numberOfSides; i += 1) {
-            ctx.lineTo(centerX + mousePos.x * Math.cos(i * 2 * Math.PI / numberOfSides), centerY + mousePos.y * Math.sin(i * 2 * Math.PI / numberOfSides));
-        }
-        ctx.stroke();
-    }
-}
 
 function addLogText(aText) {
     if (txtLog.innerHTML.length > 0) {
@@ -207,18 +124,48 @@ function addLogText(aText) {
     txtLog.innerHTML += aText;
 }
 
-function newDrawing() {
+function newDrawing() { //clears canvas and prepares new drawing
+
     addLogText("New Drawing!");
-    updateDrawing();
+
+    currentDrawingObject = null;
+    drawings.length = 0;
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+    const paintObjectList = document.getElementById("paintObjectList");
+    paintObjectList.innerHTML = "";
 }
 
-function updateDrawing() {
-    ctx.clearRect(0, 0, cvsPaint.width, cvsPaint.height);
+function removeObject() {
+
+    const index = menuRemoveCurrentPaintShape();
+    if (index >= 0) {
+        paintObjectList.removeChild(paintObjectList.children[index]);
+        drawings.splice(index, 1); 
+
+    addLogText("Deleted shape!");
+
+    updateDrawing();
+    }
 }
+
+function updateDrawing() {//Need this to make canvas ready for next drawing cycle
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+    for (let i = 0; i < drawings.length; i++) {
+        drawings[i].draw();
+    }
+
+    if (currentDrawingObject) {
+        currentDrawingObject.draw();
+    }
+}
+
 
 /*
-    This function is call from the menu when all menuitems is loaded
+    This function is called from the menu when all menuitems is loaded
 */
+
 function loadPaintApp() {
     createMenu(cmbClick);
     newDrawing();
@@ -229,88 +176,95 @@ function cmbClick(aContainerKey, aButtonKey, aButtonValue) {
     txtLog += "Button " + aButtonKey + ", value = " + aButtonValue.toLocaleString();
     addLogText(txtLog);
 
-    setMenuChoices(aContainerKey, aButtonKey, aButtonValue);
-    chooseShape(aButtonKey);
-}
-
-function setMenuChoices(aContainerKey, aButtonKey, aButtonValue) {
-    if (aContainerKey === "StrokeColor" && EColorType[aButtonKey]) {
-        ctx.strokeStyle = EColorType[aButtonKey];
+    if (!drawingProperties) { //Making an occurence of TDrawingProperties, but without setting parameters needed
+        drawingProperties = new TDrawingProperties();
     }
 
-    if (aContainerKey === "FillColor" && EColorType[aButtonKey]) {
-        ctx.fillStyle = EColorType[aButtonKey];
+    if (aContainerKey === "Action") { //Calls the functions that should run when each action-button is clicked
+        switch (aButtonValue) {
+            case EActionType.New:
+                newDrawing();
+                break;
+            case EActionType.Eraser:
+                removeObject();
+                break;
+            case EActionType.MoveUp:
+                menuMovePaintShapeUp();
+                break;
+            case EActionType.MoveDown:
+                menuMovePaintShapeDown();
+                break;
+        }
+    } else if //Set the parameters needed for TDrawingProperties (the color/fill/size/shape chosen by active buttons)
+        (aContainerKey === "StrokeColor") {
+        drawingProperties.strokeStyle = aButtonValue;
+    } else if (aContainerKey === "FillColor") {
+        drawingProperties.fillStyle = aButtonValue;
+    } else if (aContainerKey === "StrokeSize") {
+        drawingProperties.lineWidth = aButtonValue;
+    } else if (aContainerKey === "ShapeType") {
+        drawingProperties.shapeType = aButtonValue;
     }
 
-    if (aContainerKey === "StrokeSize" && EStrokeSizeType[aButtonKey]) {
-        ctx.lineWidth = EStrokeSizeType[aButtonKey];
-    }
+    console.log(drawingProperties);
 
-    if ((aContainerKey === "Action") && (aButtonKey === "New")) {
-        newDrawing();
-    }
-
-    if ((aContainerKey === "Action") && (aButtonKey === "Eraser")) {
-        drawingList.pop();
-    }
-}
-
-function chooseShape(aButtonKey) {
-    //currentDrawingObject = new TDrawingObject(aButtonKey);
-    if (aButtonKey === "Line") {
-        drawStraightLine();
-    } else if (aButtonKey === "Pen") {
-        drawFreehand();
-    } else if (aButtonKey === "Circle") {
-        drawCircle();
-    } else if (aButtonKey === "Oval") {
-        drawOval();
-    } else if (aButtonKey === "Rectangle") {
-        drawRectangle();
-    } else if (aButtonKey === "Polygon") {
-        drawPolygon();
-    }
 }
 
 
-
-function setMousePos(aEvent) {
+function setMousePos(aEvent) {  //Sets the mouseposition when aEvent happens
     const bounds = cvs.getBoundingClientRect();
-    mousePos.x = aEvent.clientX - bounds.left;
-    mousePos.y = aEvent.clientY - bounds.top;
+    mousePos.x = aEvent.x - bounds.left;
+    mousePos.y = aEvent.y - bounds.top;
 }
 
-export function cvsPaintMouseMove(aEvent) {      // denne kjører setMousePos når cvsPaintMouseMove blir ropt på
-    // Mouse move over canvas
+export function cvsPaintMouseMove(aEvent) { //Runs when mouse is moved while mousebutton down on canvas
     setMousePos(aEvent);
 
-    if (!isDrawing) return;
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(mousePos.x, mousePos.y);
-    ctx.stroke();
-    lastX = mousePos.x
-    lastY = mousePos.y;
+    if (currentDrawingObject) {
+        if (drawingProperties.shapeType === EShapeType.Pen) {
+            currentDrawingObject.addPos(new TPoint(mousePos.x, mousePos.y));
+        }
+
+        updateDrawing();
+    }
 }
 
-export function cvsPaintMouseDown() { // denne må kjøre igang hele tegnefunksjonen
-    // Mouse button down in canvas
-    isDrawing = true;
-    lastX = mousePos.x;
-    lastY = mousePos.y;
-    console.log("klikk")
+export function cvsPaintMouseDown(aEvent) { //Runs when mousebutton is pressed down in canvas
+
+    if (drawingProperties.goodToGo()) {
+        if (!currentDrawingObject) {
+            currentDrawingObject = new TDrawingObject(mousePos, drawingProperties);
+        } else {
+            if (aEvent.buttons === 2) {
+                drawings.push(currentDrawingObject);
+                menuAddPaintShape(currentDrawingObject.name);
+                currentDrawingObject.setEnd(mousePos);
+                currentDrawingObject = null;
+            }
+        }
+    }
 }
 
-export function cvsPaintMouseUp(aEvent) {  // denne stopper tegningen
-    // Mouse button up in canvas
-    isDrawing = false;
-    console.log("ferdig klikk");
-    //her legger du til tegnede objekter
-    //drawingList.push(new TDrawingObject(ctx, ));
+
+export function cvsPaintMouseUp(aEvent) {  //Runs when mousebutton is released
+    if (currentDrawingObject) {
+        if (drawingProperties.shapeType === EShapeType.Polygon) {
+            currentDrawingObject.addPos(new TPoint(mousePos.x, mousePos.y));
+        } else {
+            drawings.push(currentDrawingObject);
+            menuAddPaintShape(currentDrawingObject.name);
+            currentDrawingObject.setEnd(mousePos);
+            currentDrawingObject = null;
+        }
+    }
+    // Adds the new drawing object/shape to the list
+    updateDrawing();
 }
 
+console.log("Tegneliste: " + drawings.length.toString());
 
 export function initPaint(aPaintCanvas, aMenuCanvas) {
+    //Need this to  provide canvas, and to listen for events to start running functions connected to the mousebutton
     cvs = aPaintCanvas;
     ctx = cvs.getContext("2d");
     cvs.addEventListener("mousemove", cvsPaintMouseMove);
